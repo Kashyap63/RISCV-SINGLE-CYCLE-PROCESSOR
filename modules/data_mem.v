@@ -19,40 +19,65 @@ assign rd_data_mem = data_ram[wr_addr[DATA_WIDTH-1:2] % 64];
 // synchronous write logic
 always @(posedge clk) begin
     if (wr_en) begin
-        case(funct3)
-            3'b000:begin
-                case(wr_addr[1:0])
-                    2'b00:data_ram[word_addr][7:0] = wr_data[7:0];
-                    2'b01:data_ram[word_addr][15:8] = wr_data[7:0];
-                    2'b10:data_ram[word_addr][23:16] = wr_data[7:0];
-                    2'b11:data_ram[word_addr][31:24] = wr_data[7:0];
-            endcase
+        case (funct3)
+            3'b000: begin // SB
+                case (wr_addr[1:0])
+                    2'b00: data_ram[word_addr][7:0]   = wr_data[7:0];
+                    2'b01: data_ram[word_addr][15:8]  = wr_data[7:0];
+                    2'b10: data_ram[word_addr][23:16] = wr_data[7:0];
+                    2'b11: data_ram[word_addr][31:24] = wr_data[7:0];
+                endcase
             end
-            3'b010:data_ram[word_addr]<=wr_data;
+            3'b001: begin // SH (Store Halfword)
+                case (wr_addr[1])
+                    1'b0: begin
+                        data_ram[word_addr][7:0]  = wr_data[7:0];
+                        data_ram[word_addr][15:8] = wr_data[15:8];
+                    end
+                    1'b1: begin
+                        data_ram[word_addr][23:16] = wr_data[7:0];
+                        data_ram[word_addr][31:24] = wr_data[15:8];
+                    end
+                endcase
+            end
+            3'b010: data_ram[word_addr] <= wr_data; // SW
         endcase
     end
 end
 
-always@(*)begin
-    case(funct3)
-    3'b000:begin
-        case(wr_addr[1:0])
-        2'b00:rd_data_mem={{24{data_ram[word_addr][7]}},data_ram[word_addr][7:0]};
-        2'b01:rd_data_mem={{24{data_ram[word_addr][15]}},data_ram[word_addr][15:8]};
-        2'b10:rd_data_mem={{24{data_ram[word_addr][23]}},data_ram[word_addr][23:16]};
-        2'b11:rd_data_mem={{24{data_ram[word_addr][31]}},data_ram[word_addr][31:24]};
-        endcase
-    end
-    3'b100:begin
-        case(wr_addr[1:0])
-        2'b00:rd_data_mem={24'b0,data_ram[word_addr][7:0]};
-        2'b01:rd_data_mem={24'b0,data_ram[word_addr][15:8]};
-        2'b10:rd_data_mem={24'b0,data_ram[word_addr][23:16]};
-        2'b11:rd_data_mem={24'b0,data_ram[word_addr][31:24]};
-        endcase
-    end
-    3'b010:rd_data_mem=data_ram[word_addr];
-endcase
+
+always @(*) begin
+    case (funct3)
+        3'b000: begin // LB
+            case (wr_addr[1:0])
+                2'b00: rd_data_mem = {{24{data_ram[word_addr][7]}},  data_ram[word_addr][7:0]};
+                2'b01: rd_data_mem = {{24{data_ram[word_addr][15]}}, data_ram[word_addr][15:8]};
+                2'b10: rd_data_mem = {{24{data_ram[word_addr][23]}}, data_ram[word_addr][23:16]};
+                2'b11: rd_data_mem = {{24{data_ram[word_addr][31]}}, data_ram[word_addr][31:24]};
+            endcase
+        end
+        3'b100: begin // LBU
+            case (wr_addr[1:0])
+                2'b00: rd_data_mem = {24'b0, data_ram[word_addr][7:0]};
+                2'b01: rd_data_mem = {24'b0, data_ram[word_addr][15:8]};
+                2'b10: rd_data_mem = {24'b0, data_ram[word_addr][23:16]};
+                2'b11: rd_data_mem = {24'b0, data_ram[word_addr][31:24]};
+            endcase
+        end
+        3'b001: begin // LH
+            case(wr_addr[1])
+                1'b0: rd_data_mem = {{16{data_ram[word_addr][15]}}, data_ram[word_addr][15:0]};
+                1'b1: rd_data_mem = {{16{data_ram[word_addr][31]}}, data_ram[word_addr][31:16]};
+            endcase
+        end
+        3'b101: begin // LHU
+            case(wr_addr[1])
+                1'b0: rd_data_mem = {16'b0, data_ram[word_addr][15:0]};
+                1'b1: rd_data_mem = {16'b0, data_ram[word_addr][31:16]};
+            endcase
+        end
+        3'b010: rd_data_mem = data_ram[word_addr]; // LW
+    endcase
 end
 endmodule
 
