@@ -1,6 +1,6 @@
 #Test all instructions of rv32i isa for RISC-V processor:
 #Instructions                                   #Calculation                    #PC         #Note
-
+#This file is for understanding instruction written in rv32i_test.hex
 # I type instruction related to register file
 main:       addi    x1, x0, 1                   # x1 = 1                        0           #initialized reg 1
             addi    x2, x0, 16                  # x2 = 16                       4           #initialized reg 2
